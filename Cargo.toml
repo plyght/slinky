@@ -1,6 +1,6 @@
 [package]
 name = "slnky"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["plyght"]
 description = "A modern dotfiles manager with stow-compatible symlink management, remote repository support, and secret encryption"
