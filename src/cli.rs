@@ -609,12 +609,10 @@ fn confirm(prompt: &str, default: bool) -> Result<bool> {
         prompt,
         default_hint.dimmed()
     );
-    io::stdout().flush().map_err(|e| SlinkyError::Io(e))?;
+    io::stdout().flush().map_err(SlinkyError::Io)?;
 
     let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .map_err(|e| SlinkyError::Io(e))?;
+    io::stdin().read_line(&mut input).map_err(SlinkyError::Io)?;
 
     let input = input.trim().to_lowercase();
     Ok(if input.is_empty() {
@@ -631,26 +629,23 @@ fn prompt_path(prompt: &str, default: &Path) -> Result<PathBuf> {
         prompt,
         default.display().to_string().dimmed()
     );
-    io::stdout().flush().map_err(|e| SlinkyError::Io(e))?;
+    io::stdout().flush().map_err(SlinkyError::Io)?;
 
     let mut input = String::new();
-    io::stdin()
-        .read_line(&mut input)
-        .map_err(|e| SlinkyError::Io(e))?;
+    io::stdin().read_line(&mut input).map_err(SlinkyError::Io)?;
 
     let input = input.trim();
     Ok(if input.is_empty() {
         default.to_path_buf()
     } else {
-        let path = PathBuf::from(shellexpand_tilde(input));
-        path
+        PathBuf::from(shellexpand_tilde(input))
     })
 }
 
 fn shellexpand_tilde(path: &str) -> String {
-    if path.starts_with("~/") {
+    if let Some(stripped) = path.strip_prefix("~/") {
         if let Some(home) = dirs_home() {
-            return home.join(&path[2..]).to_string_lossy().to_string();
+            return home.join(stripped).to_string_lossy().to_string();
         }
     }
     path.to_string()
@@ -850,7 +845,7 @@ fn unlink_single_package(name: &str, package_path: &Path, target: &Path, cli: &C
 
     for op in &linked_ops {
         if op.target.is_symlink() {
-            fs::remove_file(&op.target).map_err(|e| SlinkyError::Io(e))?;
+            fs::remove_file(&op.target).map_err(SlinkyError::Io)?;
         }
     }
 
@@ -1166,7 +1161,7 @@ fn unlink_package(package: &str, cli: &Cli, config: &Config) -> Result<()> {
     let mut removed = 0;
     for op in &linked_ops {
         if op.target.is_symlink() {
-            fs::remove_file(&op.target).map_err(|e| SlinkyError::Io(e))?;
+            fs::remove_file(&op.target).map_err(SlinkyError::Io)?;
             removed += 1;
         }
     }

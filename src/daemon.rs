@@ -11,9 +11,7 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
 use tokio::sync::mpsc;
 
-use crate::config::{
-    daemon_log_path, daemon_pid_path, load_config, Config, ConflictResolution,
-};
+use crate::config::{daemon_log_path, daemon_pid_path, load_config, Config, ConflictResolution};
 use crate::stow::{analyze_package, execute_operations, find_packages, OpType};
 
 #[derive(Debug)]
@@ -22,6 +20,7 @@ pub enum DaemonError {
     NotRunning,
     Io(std::io::Error),
     Config(String),
+    #[allow(dead_code)]
     Watch(String),
 }
 
@@ -51,10 +50,12 @@ pub enum DaemonEvent {
     NewPackage(String),
     GitChanged,
     SymlinkDeleted(PathBuf),
+    #[allow(dead_code)]
     Shutdown,
 }
 
 pub struct DaemonState {
+    #[allow(dead_code)]
     config: Config,
     known_packages: HashSet<String>,
     running: Arc<AtomicBool>,
@@ -117,6 +118,20 @@ fn chrono_lite_now() -> String {
 fn should_ignore_path(path: &Path) -> bool {
     let path_str = path.to_string_lossy();
 
+    #[cfg(unix)]
+    let ignored_patterns = [
+        ".git/",
+        ".DS_Store",
+        ".swp",
+        ".swo",
+        "~",
+        ".tmp",
+        ".temp",
+        "4913", // vim temp file
+        ".gitignore",
+    ];
+
+    #[cfg(windows)]
     let ignored_patterns = [
         ".git/",
         ".git\\",
@@ -172,10 +187,7 @@ fn backup_file(path: &Path) -> Result<PathBuf, std::io::Error> {
     Ok(backup_path)
 }
 
-fn handle_conflict(
-    target: &Path,
-    resolution: ConflictResolution,
-) -> Result<bool, std::io::Error> {
+fn handle_conflict(target: &Path, resolution: ConflictResolution) -> Result<bool, std::io::Error> {
     match resolution {
         ConflictResolution::Backup => {
             if target.exists() && !target.is_symlink() {
@@ -274,8 +286,7 @@ pub fn stop_daemon() -> Result<(), DaemonError> {
             .args(["-TERM", &pid.to_string()])
             .status()?;
         if !status.success() {
-            return Err(DaemonError::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            return Err(DaemonError::Io(std::io::Error::other(
                 "Failed to send SIGTERM",
             )));
         }
@@ -287,8 +298,7 @@ pub fn stop_daemon() -> Result<(), DaemonError> {
             .args(["/PID", &pid.to_string()])
             .status()?;
         if !status.success() {
-            return Err(DaemonError::Io(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            return Err(DaemonError::Io(std::io::Error::other(
                 "Failed to terminate process",
             )));
         }
@@ -443,8 +453,7 @@ pub async fn run_daemon() -> Result<(), DaemonError> {
                                     let _ = tx_watcher
                                         .send(DaemonEvent::DotfileChanged(path.clone()))
                                         .await;
-                                    let _ =
-                                        tx_watcher.send(DaemonEvent::NewPackage(pkg)).await;
+                                    let _ = tx_watcher.send(DaemonEvent::NewPackage(pkg)).await;
                                 }
                             }
                         }
@@ -626,15 +635,17 @@ fn link_package_auto(
     let operations = analyze_package(package_path, target_dir).map_err(|e| e.to_string())?;
 
     for op in &operations {
-        if matches!(op.op_type, OpType::Create) {
-            if op.target.exists() {
-                match handle_conflict(&op.target, config.auto_sync.conflict_resolution) {
-                    Ok(true) => {}
-                    Ok(false) => continue,
-                    Err(e) => {
-                        eprintln!("Conflict resolution failed for {}: {}", op.target.display(), e);
-                        continue;
-                    }
+        if matches!(op.op_type, OpType::Create) && op.target.exists() {
+            match handle_conflict(&op.target, config.auto_sync.conflict_resolution) {
+                Ok(true) => {}
+                Ok(false) => continue,
+                Err(e) => {
+                    eprintln!(
+                        "Conflict resolution failed for {}: {}",
+                        op.target.display(),
+                        e
+                    );
+                    continue;
                 }
             }
         }
@@ -680,19 +691,17 @@ pub fn daemon_status() -> (bool, Option<u32>, Option<String>) {
     let log_excerpt = if running {
         let log_path = daemon_log_path();
         if log_path.exists() {
-            fs::read_to_string(&log_path)
-                .ok()
-                .map(|content| {
-                    content
-                        .lines()
-                        .rev()
-                        .take(5)
-                        .collect::<Vec<_>>()
-                        .into_iter()
-                        .rev()
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                })
+            fs::read_to_string(&log_path).ok().map(|content| {
+                content
+                    .lines()
+                    .rev()
+                    .take(5)
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })
         } else {
             None
         }

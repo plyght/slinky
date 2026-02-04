@@ -6,6 +6,7 @@ use std::process::Command;
 #[derive(Debug)]
 pub enum ServiceError {
     Io(std::io::Error),
+    #[allow(dead_code)]
     UnsupportedPlatform,
     AlreadyInstalled,
     NotInstalled,
@@ -33,6 +34,7 @@ impl From<std::io::Error> for ServiceError {
 }
 
 const LAUNCHD_LABEL: &str = "com.slinky.daemon";
+#[cfg(target_os = "linux")]
 const SYSTEMD_SERVICE_NAME: &str = "slinky";
 
 fn get_launchd_plist_path() -> PathBuf {
@@ -43,6 +45,7 @@ fn get_launchd_plist_path() -> PathBuf {
         .join(format!("{}.plist", LAUNCHD_LABEL))
 }
 
+#[cfg(target_os = "linux")]
 fn get_systemd_service_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/".to_string());
     PathBuf::from(home)
@@ -108,6 +111,7 @@ fn generate_launchd_plist() -> Result<String, ServiceError> {
     Ok(plist)
 }
 
+#[cfg(target_os = "linux")]
 fn generate_systemd_service() -> Result<String, ServiceError> {
     let exe_path = std::env::current_exe()?;
     let exe_str = exe_path.to_string_lossy();
@@ -315,6 +319,7 @@ pub fn uninstall_service() -> Result<String, ServiceError> {
     }
 }
 
+#[allow(dead_code)]
 pub fn start_service() -> Result<String, ServiceError> {
     if !is_service_installed() {
         return Err(ServiceError::NotInstalled);
@@ -354,6 +359,7 @@ pub fn start_service() -> Result<String, ServiceError> {
     }
 }
 
+#[allow(dead_code)]
 pub fn stop_service() -> Result<String, ServiceError> {
     if !is_service_installed() {
         return Err(ServiceError::NotInstalled);
