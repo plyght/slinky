@@ -1,6 +1,5 @@
 use slnky::stow::{analyze_package, execute_operations, find_packages, OpType};
 use std::fs;
-use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("=== Slinky Stow Engine Demo ===\n");

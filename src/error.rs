@@ -7,6 +7,7 @@ pub enum SlinkyError {
     Io(#[from] io::Error),
 
     #[error("Configuration error: {0}")]
+    #[allow(dead_code)]
     Config(String),
 
     #[error("Stow operation failed: {0}")]
@@ -25,21 +26,26 @@ pub enum SlinkyError {
     PackageNotFound(String),
 
     #[error("Target directory not found: {0}")]
+    #[allow(dead_code)]
     TargetNotFound(String),
 
     #[error("Conflict detected: {0}")]
+    #[allow(dead_code)]
     Conflict(String),
 
     #[error("Git error: {0}")]
+    #[allow(dead_code)]
     Git(String),
 
     #[error("Encryption error: {0}")]
     Encryption(String),
 
     #[error("Decryption error: {0}")]
+    #[allow(dead_code)]
     Decryption(String),
 
     #[error("Parse error: {0}")]
+    #[allow(dead_code)]
     Parse(String),
 
     #[error("{0}")]

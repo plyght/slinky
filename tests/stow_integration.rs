@@ -1,6 +1,5 @@
 use slnky::stow::{analyze_package, execute_operations, find_packages, OpType};
 use std::fs;
-use std::path::PathBuf;
 
 #[test]
 fn test_stow_workflow() {
@@ -14,7 +13,7 @@ fn test_stow_workflow() {
     fs::create_dir_all(&target_dir).unwrap();
 
     let package_path = stow_dir.join("nvim");
-    fs::create_dir_all(&package_path.join(".config/nvim")).unwrap();
+    fs::create_dir_all(package_path.join(".config/nvim")).unwrap();
     fs::write(package_path.join(".config/nvim/init.lua"), "-- nvim config").unwrap();
 
     let packages = find_packages(&stow_dir).unwrap();

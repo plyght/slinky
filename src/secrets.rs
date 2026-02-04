@@ -20,18 +20,22 @@ pub enum SecretError {
     Encryption(String),
 
     #[error("Decryption error: {0}")]
+    #[allow(dead_code)]
     Decryption(String),
 
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
     #[error("Secret not found: {0}")]
+    #[allow(dead_code)]
     SecretNotFound(String),
 
     #[error("Template file not found: {0}")]
+    #[allow(dead_code)]
     TemplateNotFound(String),
 
     #[error("Invalid passphrase")]
+    #[allow(dead_code)]
     InvalidPassphrase,
 }
 
@@ -80,6 +84,7 @@ impl SecretStore {
         }
     }
 
+    #[allow(dead_code)]
     pub fn load(secrets_path: &Path) -> Result<Self, SecretError> {
         let encrypted_data = fs::read(secrets_path)?;
         Ok(Self {
@@ -96,6 +101,7 @@ impl SecretStore {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn decrypt_with_passphrase(
         &self,
         passphrase: &str,
@@ -214,13 +220,7 @@ pub fn create_template(file: &Path, secrets: &[Secret]) -> Result<PathBuf, Secre
 
             let placeholder = format!("${{{}}}", secret.name);
 
-            let templated_line = if original_line.contains("export") {
-                original_line.replace(&secret.value, &placeholder)
-            } else if original_line.trim_start().starts_with("set") {
-                original_line.replace(&secret.value, &placeholder)
-            } else {
-                original_line.replace(&secret.value, &placeholder)
-            };
+            let templated_line = original_line.replace(&secret.value, &placeholder);
 
             templated_lines[line_idx] = Box::leak(templated_line.into_boxed_str());
         }
@@ -301,6 +301,7 @@ pub fn encrypt_secrets(secrets: &[Secret], passphrase: &str) -> Result<SecretSto
     Ok(store)
 }
 
+#[allow(dead_code)]
 pub fn decrypt_and_substitute(
     template: &Path,
     store: &SecretStore,
@@ -333,6 +334,7 @@ pub fn decrypt_and_substitute(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn get_default_secrets_path() -> Result<PathBuf, SecretError> {
     let base_dirs = directories::BaseDirs::new().ok_or_else(|| {
         SecretError::Io(std::io::Error::new(

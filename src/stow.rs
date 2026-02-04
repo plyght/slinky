@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone)]
 pub struct StowPackage {
     pub name: String,
+    #[allow(dead_code)]
     pub path: PathBuf,
 }
 
@@ -19,6 +20,7 @@ pub struct SymlinkOp {
 #[derive(Debug, Clone, PartialEq)]
 pub enum OpType {
     Create,
+    #[allow(dead_code)]
     Remove,
     Skip(String),
 }
@@ -161,13 +163,11 @@ pub fn execute_operations(ops: &[SymlinkOp], dry_run: bool) -> Result<Vec<String
             OpType::Remove => {
                 let result = if dry_run {
                     format!("[DRY-RUN] Would remove symlink: {}", op.target.display())
+                } else if op.target.is_symlink() {
+                    fs::remove_file(&op.target)?;
+                    format!("Removed symlink: {}", op.target.display())
                 } else {
-                    if op.target.is_symlink() {
-                        fs::remove_file(&op.target)?;
-                        format!("Removed symlink: {}", op.target.display())
-                    } else {
-                        format!("Skipped non-symlink: {}", op.target.display())
-                    }
+                    format!("Skipped non-symlink: {}", op.target.display())
                 };
                 results.push(result);
             }
@@ -204,16 +204,16 @@ fn scan_package_recursive(
             ))
         })?;
 
-        if is_ignored(&relative_path, ignore_patterns) {
+        if is_ignored(relative_path, ignore_patterns) {
             operations.push(SymlinkOp {
                 source: path.clone(),
-                target: target_dir.join(&relative_path),
+                target: target_dir.join(relative_path),
                 op_type: OpType::Skip("Ignored by .stow-local-ignore".to_string()),
             });
             continue;
         }
 
-        let target_path = target_dir.join(&relative_path);
+        let target_path = target_dir.join(relative_path);
 
         if path.is_dir() {
             scan_package_recursive(package_root, &path, target_dir, ignore_patterns, operations)?;
@@ -319,12 +319,10 @@ fn glob_match(text: &str, pattern: &str) -> bool {
                 return false;
             }
             return true;
+        } else if let Some(pos) = text[text_pos..].find(part) {
+            text_pos += pos + part.len();
         } else {
-            if let Some(pos) = text[text_pos..].find(part) {
-                text_pos += pos + part.len();
-            } else {
-                return false;
-            }
+            return false;
         }
     }
 
